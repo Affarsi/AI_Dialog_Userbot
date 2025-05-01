@@ -4,7 +4,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import MessageInput
 
-from bot.database.requests import db_change_all_chats_status, db_delete_chat
+from bot.database.requests import db_change_all_chats_status, db_delete_chat, db_add_chat
 from bot.dialogs.states_groups import MainDialog
 
 
@@ -54,4 +54,28 @@ async def delete_chat(
     )
 
     # Обновляем диалог
+    await dialog_manager.switch_to(state=MainDialog.main_menu)
+
+
+# Добавить чат
+async def add_chat(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    telegram_chat = await dialog_manager.event.bot.get_chat(message.text)
+
+    # Если чат не найден
+    if not telegram_chat:
+        await dialog_manager.event.answer(f"Чат @{message.text} не найден")
+        await dialog_manager.switch_to(state=MainDialog.main_menu)
+        return
+
+    # Добавляем чат в БД
+    result = await db_add_chat(telegram_chat)
+
+    # Оповещаем пользователя и обновляем диалог
+    await dialog_manager.event.answer(
+        f"Чат @{message.text} успешно добавлен" if result else f"@{message.text} - ошибка базы данных"
+    )
     await dialog_manager.switch_to(state=MainDialog.main_menu)

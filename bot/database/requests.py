@@ -1,4 +1,5 @@
-from sqlalchemy import select, func, update, delete
+from aiogram.types import ChatFullInfo
+from sqlalchemy import select, func, update, delete, insert
 from datetime import datetime, timedelta
 
 from bot.database.run_db import async_session
@@ -48,4 +49,31 @@ async def db_delete_chat(username: str) -> bool:
         except Exception as e:
             await session.rollback()
             print(f"Ошибка при удалении чата @{username}: {e}")
+            return False
+
+
+# Добавить чат
+async def db_add_chat(chat_full_info: ChatFullInfo) -> bool:
+    async with async_session() as session:
+        try:
+            # Создаем новую запись чата
+            new_chat = {
+                "id": chat_full_info.id,
+                "title": chat_full_info.title,
+                "username": chat_full_info.username,
+                "status": False,  # Статус по умолчанию - выключен
+                "work_mode": "Не выбран",  # Режим работы по умолчанию
+                "activity_interval_minutes": 120  # Интервал по умолчанию (2 часа)
+            }
+
+            # Выполняем запрос на добавление
+            stmt = insert(Chat).values(**new_chat)
+            await session.execute(stmt)
+            await session.commit()
+
+            return True
+
+        except Exception as e:
+            await session.rollback()
+            print(f"Ошибка при добавлении чата: {e}")
             return False
