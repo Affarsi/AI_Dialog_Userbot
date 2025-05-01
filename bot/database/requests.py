@@ -61,9 +61,6 @@ async def db_add_chat(chat_full_info: ChatFullInfo) -> bool:
                 "id": chat_full_info.id,
                 "title": chat_full_info.title,
                 "username": chat_full_info.username,
-                "status": False,  # Статус по умолчанию - выключен
-                "work_mode": "Не выбран",  # Режим работы по умолчанию
-                "activity_interval_minutes": 120  # Интервал по умолчанию (2 часа)
             }
 
             # Выполняем запрос на добавление
@@ -76,4 +73,59 @@ async def db_add_chat(chat_full_info: ChatFullInfo) -> bool:
         except Exception as e:
             await session.rollback()
             print(f"Ошибка при добавлении чата: {e}")
+            return False
+
+
+# Получить информацию о чате по username
+async def db_get_chat(username: str) -> dict or None:
+    async with async_session() as session:
+        try:
+            # Получаем чат из базы данных
+            result = await session.execute(
+                select(Chat).where(Chat.username == username)
+            )
+            chat = result.scalar_one_or_none()
+
+            if chat:
+            # Формируем словарь с данными чата
+                return {
+                    'id': chat.id,
+                    'title': chat.title,
+                    'username': chat.username,
+                    'status': "🟢" if chat.status else "🔴",
+                    'work_mode': chat.work_mode,
+                    'activity_interval_hours': chat.activity_interval_hours,
+                    'dialog_chance': chat.dialog_chance,
+                    'question_chance': chat.question_chance
+                }
+            return None
+
+        except Exception as e:
+            print(f"Ошибка при получении чата @{username}: {e}")
+            return
+
+
+# Изменить информацию о чате по username
+async def db_change_chat(username: str, new_chat_data: dict[str, any]) -> bool:
+    async with async_session() as session:
+        try:
+            # Проверяем, что есть что обновлять
+            if not new_chat_data:
+                return False
+
+            # Создаем запрос на обновление
+            stmt = update(Chat) \
+                .where(Chat.username == username) \
+                .values(**new_chat_data)
+
+            # Выполняем запрос
+            result = await session.execute(stmt)
+            await session.commit()
+
+            # Проверяем, был ли обновлен хотя бы один чат
+            return True if result.rowcount > 0 else False
+
+        except Exception as e:
+            await session.rollback()
+            print(f"Ошибка при обновлении чата @{username}: {e}")
             return False

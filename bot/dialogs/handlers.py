@@ -4,7 +4,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import MessageInput
 
-from bot.database.requests import db_change_all_chats_status, db_delete_chat, db_add_chat
+from bot.database.requests import db_change_all_chats_status, db_delete_chat, db_add_chat, db_change_chat
 from bot.dialogs.states_groups import MainDialog
 
 
@@ -31,6 +31,52 @@ async def change_all_chats_status(
 
     except Exception as e:
         print(f"Ошибка при изменении статуса чатов: {e}")
+        await callback.answer("Произошла ошибка при изменении статуса",)
+    finally:
+        # Обновляем интерфейс после изменения
+        await dialog_manager.show()
+
+
+# Запуск/остановка работы ботов в чате
+async def change_chat_status(
+        callback: CallbackQuery,
+        button: Button,
+        dialog_manager: DialogManager
+):
+    # Определяем действие (запуск/остановка) по callback.data
+    action = callback.data
+    new_status = action == 'chat_start'  # True для запуска, False для остановки
+
+    try:
+        # Вызываем функцию обновления статуса в БД
+        username = dialog_manager.dialog_data.get('chat_settings_username')
+        await db_change_chat(username, {'status': new_status})
+
+    except Exception as e:
+        print(f"Ошибка при изменении статуса чатов: {e}")
+        await callback.answer("Произошла ошибка при изменении статуса",)
+    finally:
+        # Обновляем интерфейс после изменения
+        await dialog_manager.show()
+
+
+# Сменить режим работы ботов в чате
+async def change_chat_mode(
+        callback: CallbackQuery,
+        button: Button,
+        dialog_manager: DialogManager
+):
+    # Определяем режима (Диалог/Вопрос) по callback.data
+    action = callback.data
+    new_mode = 'Диалог' if action == 'dialog_mode' else 'Вопрос'  # True для запуска, False для остановки
+
+    try:
+        # Вызываем функцию обновления статуса в БД
+        username = dialog_manager.dialog_data.get('chat_settings_username')
+        await db_change_chat(username, {'work_mode': new_mode})
+
+    except Exception as e:
+        print(f"Ошибка при изменении режима работы чата: {e}")
         await callback.answer("Произошла ошибка при изменении статуса",)
     finally:
         # Обновляем интерфейс после изменения
@@ -79,3 +125,14 @@ async def add_chat(
         f"Чат @{message.text} успешно добавлен" if result else f"@{message.text} - ошибка базы данных"
     )
     await dialog_manager.switch_to(state=MainDialog.main_menu)
+
+
+# Изменить настройки чата
+async def settings_chat(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    chat_username = message.text.replace('@', '')
+    dialog_manager.dialog_data['chat_settings_username'] = chat_username
+    await dialog_manager.switch_to(state=MainDialog.chat_info)

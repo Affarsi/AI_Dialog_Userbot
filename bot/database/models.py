@@ -12,18 +12,17 @@ class Chat(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str]
     username: Mapped[str]
-    status: Mapped[bool]
-    work_mode: Mapped[str]
-    activity_interval_minutes: Mapped[int]  # Интервал активности в минутах
+    status: Mapped[bool] = mapped_column(default=False)
+    work_mode: Mapped[str] = mapped_column(default='Не выбран')
+    activity_interval_hours: Mapped[int] = mapped_column(default=2)  # Интервал активности в часах
+    dialog_chance: Mapped[int] = mapped_column(default=50)
+    question_chance: Mapped[int] = mapped_column(default=50)
 
     def format_info(self) -> str:
         """Возвращает отформатированную информацию о чате в виде строки"""
         status_icon = "🟢" if self.status else "🔴"
-        hours = self.activity_interval_minutes // 60
-        minutes = self.activity_interval_minutes % 60
-        interval_str = f"{hours} час." if hours else f"{minutes} мин."
 
         return (
             f"{self.title} (@{self.username})\n"
-            f"Статус: {status_icon} | Режим: {self.work_mode} | Интервал: {interval_str}"
+            f"Статус: {status_icon} | Режим: {self.work_mode} | Интервал: {self.activity_interval_hours} час."
         )
