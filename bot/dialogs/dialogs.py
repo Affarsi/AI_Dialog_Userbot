@@ -8,4 +8,6 @@ main_dialog = Dialog(
     delete_chat_window,
     add_chat_window,
     settings_chat_window,
+    interval_activity_chat_window,
+    work_mode_chance_window,
 )

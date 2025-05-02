@@ -6,3 +6,5 @@ class MainDialog(StatesGroup):
     delete_chat = State()
     add_chat = State()
     settings_chat = State()
+    interval_activity_chat = State()
+    work_mode_chance = State()

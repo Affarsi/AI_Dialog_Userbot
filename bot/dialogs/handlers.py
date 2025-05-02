@@ -136,3 +136,76 @@ async def settings_chat(
     chat_username = message.text.replace('@', '')
     dialog_manager.dialog_data['chat_settings_username'] = chat_username
     await dialog_manager.switch_to(state=MainDialog.chat_info)
+
+
+# Изменить интервал активности ботов в чате
+async def interval_activity_chat(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    # Получаем кол-во часов
+    try:
+        interval_activity_hours = int(message.text)
+        if interval_activity_hours > 24 or interval_activity_hours < 1:
+            await dialog_manager.event.answer('Введите число от 1 до 24')
+            return
+    except ValueError:
+        await dialog_manager.event.answer('Введите число')
+        return
+
+    # Изменяем данные в БД
+    username = dialog_manager.dialog_data.get('chat_settings_username')
+    await db_change_chat(username, {'activity_interval_hours': interval_activity_hours})
+
+    # Обновляем диалог
+    await dialog_manager.switch_to(state=MainDialog.chat_info)
+
+
+# Изменить вариативность в чате
+async def work_mode_chance_chat(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    # Получаем % диалога и вопроса
+    try:
+        # Разбиваем сообщение на части
+        parts = message.text.strip().split()
+
+        # Проверяем количество чисел
+        if len(parts) != 2:
+            await message.answer(
+                "❌ Нужно отправить ровно два числа через пробел\n"
+                "Пример: <code>60 40</code>"
+            )
+            return
+
+        # Парсим числа
+        dialog_chance = int(parts[0])
+        question_chance = int(parts[1])
+
+        # Проверяем валидность чисел
+        if dialog_chance < 0 or question_chance < 0:
+            await message.answer("❌ Проценты не могут быть отрицательными")
+            return
+
+        if (dialog_chance + question_chance) != 100:
+            await message.answer(
+                "❌ Сумма процентов должна быть равна 100%\n"
+                f"У вас: {dialog_chance + question_chance}%"
+            )
+            return
+    except ValueError:
+        await message.answer(
+            "❌ Нужно отправить целые числа\n"
+            "Пример: <code>70 30</code>"
+        )
+        return
+
+    # Изменяем данные в БД
+    username = dialog_manager.dialog_data.get('chat_settings_username')
+    await db_change_chat(username, {'question_chance': question_chance, 'dialog_chance': dialog_chance})
+
+    # Обновляем диалог
+    await dialog_manager.switch_to(state=MainDialog.chat_info)
