@@ -12,11 +12,12 @@ from bot.dialogs.states_groups import MainDialog
 
 main_window = Window(
     Format(
-        '<b>Список всех чатов:</b>\n'
+        '<b>Список всех чатов:</b>\n\n'
         '{chat_status_list}'
     ),
 
     Group(
+        Update(),
         Row(
             SwitchTo(Const('➕ Добавить чат'), id='add_chat', state=MainDialog.add_chat),
             SwitchTo(Const('➖ Удалить чат'), id='dell_chat', state=MainDialog.delete_chat)
@@ -26,7 +27,7 @@ main_window = Window(
             Button(Const('🚀 Запустить всё'), id='all_start', on_click=change_all_chats_status),
             Button(Const('🛑 Остановить всё'), id='all_stop', on_click=change_all_chats_status)
         ),
-        Update(),
+        Button(Const('Настройка ботов'), id='testt', on_click=...),
     ),
 
     getter=main_menu_getter,

@@ -4,7 +4,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import MessageInput
 
-from bot.database.requests import db_change_all_chats_status, db_delete_chat, db_add_chat, db_change_chat
+from bot.database.queries import db_change_all_chats_status, db_delete_chat, db_add_chat, db_change_chat
 from bot.dialogs.states_groups import MainDialog
 
 
@@ -51,7 +51,6 @@ async def change_chat_status(
         # Вызываем функцию обновления статуса в БД
         username = dialog_manager.dialog_data.get('chat_settings_username')
         await db_change_chat(username, {'status': new_status})
-
     except Exception as e:
         print(f"Ошибка при изменении статуса чатов: {e}")
         await callback.answer("Произошла ошибка при изменении статуса",)

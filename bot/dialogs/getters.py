@@ -1,6 +1,6 @@
 from aiogram_dialog import DialogManager
 
-from bot.database.requests import get_formatted_chats_list, db_get_chat
+from bot.database.queries import get_formatted_chats_list, db_get_chat
 from bot.database.run_db import async_session
 from bot.database.models import Chat
 from sqlalchemy import select

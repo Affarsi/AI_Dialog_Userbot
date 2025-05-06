@@ -1,3 +1,5 @@
+from typing import Union
+
 from aiogram.types import ChatFullInfo
 from sqlalchemy import select, func, update, delete, insert
 from datetime import datetime, timedelta
@@ -77,17 +79,19 @@ async def db_add_chat(chat_full_info: ChatFullInfo) -> bool:
 
 
 # Получить информацию о чате по username
-async def db_get_chat(username: str) -> dict or None:
+async def db_get_chat(username: str = None) -> Union[dict, list[dict], None]:
     async with async_session() as session:
         try:
-            # Получаем чат из базы данных
-            result = await session.execute(
-                select(Chat).where(Chat.username == username)
-            )
-            chat = result.scalar_one_or_none()
+            if username:
+                # Получаем конкретный чат по username
+                result = await session.execute(
+                    select(Chat).where(Chat.username == username)
+                )
+                chat = result.scalar_one_or_none()
 
-            if chat:
-            # Формируем словарь с данными чата
+                if not chat:
+                    return None
+
                 return {
                     'id': chat.id,
                     'title': chat.title,
@@ -96,13 +100,29 @@ async def db_get_chat(username: str) -> dict or None:
                     'work_mode': chat.work_mode,
                     'activity_interval_hours': chat.activity_interval_hours,
                     'dialog_chance': chat.dialog_chance,
-                    'question_chance': chat.question_chance
+                    'question_chance': chat.question_chance,
+                    'last_activity': chat.last_activity
                 }
-            return None
+            else:
+                # Получаем все чаты
+                result = await session.execute(select(Chat))
+                chats = result.scalars().all()
+
+                return [{
+                    'id': chat.id,
+                    'title': chat.title,
+                    'username': chat.username,
+                    'status': chat.status,
+                    'work_mode': chat.work_mode,
+                    'activity_interval_hours': chat.activity_interval_hours,
+                    'dialog_chance': chat.dialog_chance,
+                    'question_chance': chat.question_chance,
+                    'last_activity': chat.last_activity
+                } for chat in chats]
 
         except Exception as e:
-            print(f"Ошибка при получении чата @{username}: {e}")
-            return
+            print(f"Ошибка при получении чата{' @' + username if username else 's'}: {e}")
+            return None
 
 
 # Изменить информацию о чате по username
