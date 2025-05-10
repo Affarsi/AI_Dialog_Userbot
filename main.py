@@ -31,12 +31,12 @@ def setup_routers(dp: Dispatcher) -> None:
 
 # Действия при запуске планировщика
 async def on_startup():
-    await schedule_chat_activities()
-    # scheduler.add_job(
-    #     schedule_chat_activities,
-    #     CronTrigger(second="*/10"),
-    #     id="main_job",
-    # )
+    # await schedule_chat_activities()
+    scheduler.add_job(
+        schedule_chat_activities,
+        CronTrigger(hour="*/1"),
+        id="main_job",
+    )
 
 
 async def main():
