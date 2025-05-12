@@ -67,21 +67,27 @@ chat_indo_window = Window(
 )
 
 delete_chat_window = Window(
-    Const('<b>Введите логин чата, который желаете удалить:</b>\n\nНапример: @username_chat'),
+    Const('<b>Введите логин чата, который желаете удалить:</b>\n\n'
+          'Формат: @username_chat\n'
+          'Или ссылка: https://t.me/loginchatusername'),
     SwitchTo(Const('Назад'), id='to_main_menu', state=MainDialog.main_menu),
     MessageInput(delete_chat, content_types=[ContentType.TEXT]),
     state=MainDialog.delete_chat,
 )
 
 add_chat_window = Window(
-    Const('<b>Введите логин чата, который желаете добавить:</b>\n\nНапример: @username_chat'),
+    Const('<b>Введите логин чата, который желаете добавить:</b>\n\n'
+          'Формат: @username_chat\n'
+          'Или ссылка: https://t.me/loginchatusername'),
     SwitchTo(Const('Назад'), id='to_main_menu', state=MainDialog.main_menu),
     MessageInput(add_chat, content_types=[ContentType.TEXT]),
     state=MainDialog.add_chat,
 )
 
 settings_chat_window = Window(
-    Const('<b>Введите логин чата, настройки которого желаете изменить:</b>\n\nНапример: @username_chat'),
+    Const('<b>Введите логин чата, настройки которого желаете изменить:</b>\n\n'
+          'Формат: @username_chat\n'
+          'Или ссылка: https://t.me/loginchatusername'),
     SwitchTo(Const('Назад'), id='to_main_menu', state=MainDialog.main_menu),
     MessageInput(settings_chat, content_types=[ContentType.TEXT]),
     state=MainDialog.settings_chat,

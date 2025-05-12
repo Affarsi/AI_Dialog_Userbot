@@ -88,7 +88,11 @@ async def delete_chat(
         message_input: MessageInput,
         dialog_manager: DialogManager,
 ):
-    chat_username = message.text.replace('@', '')
+    # Извлекаем username из разных форматов
+    if message.text.startswith('https://t.me/'):
+        chat_username = message.text.split('/')[-1]
+    else:
+        chat_username = message.text.replace('@', '')
 
     # Удаляем чат из БЗ
     result = await db_delete_chat(chat_username)
@@ -108,11 +112,17 @@ async def add_chat(
         message_input: MessageInput,
         dialog_manager: DialogManager,
 ):
-    telegram_chat = await dialog_manager.event.bot.get_chat(message.text)
+    # Извлекаем username из разных форматов
+    if message.text.startswith('https://t.me/'):
+        chat_identifier = message.text.split('/')[-1]
+    else:
+        chat_identifier = message.text.replace('@', '')
+
+    telegram_chat = await dialog_manager.event.bot.get_chat("@" + chat_identifier)
 
     # Если чат не найден
     if not telegram_chat:
-        await dialog_manager.event.answer(f"Чат @{message.text} не найден")
+        await dialog_manager.event.answer(f"Чат {chat_identifier} не найден")
         await dialog_manager.switch_to(state=MainDialog.main_menu)
         return
 
@@ -121,7 +131,7 @@ async def add_chat(
 
     # Оповещаем пользователя и обновляем диалог
     await dialog_manager.event.answer(
-        f"Чат @{message.text} успешно добавлен" if result else f"@{message.text} - ошибка базы данных"
+        f"Чат @{telegram_chat.username} успешно добавлен" if result else f"{chat_identifier} - ошибка базы данных"
     )
     await dialog_manager.switch_to(state=MainDialog.main_menu)
 
@@ -132,7 +142,12 @@ async def settings_chat(
         message_input: MessageInput,
         dialog_manager: DialogManager,
 ):
-    chat_username = message.text.replace('@', '')
+    # Извлекаем username из разных форматов
+    if message.text.startswith('https://t.me/'):
+        chat_username = message.text.split('/')[-1]
+    else:
+        chat_username = message.text.replace('@', '')
+
     dialog_manager.dialog_data['chat_settings_username'] = chat_username
     await dialog_manager.switch_to(state=MainDialog.chat_info)
 
