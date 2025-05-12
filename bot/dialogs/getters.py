@@ -1,11 +1,42 @@
+import json
+
+import re
+import json
+from pathlib import Path
+from pyrogram import Client
+from pyrogram.errors import SessionPasswordNeeded
+from telethon import TelegramClient
+
 from aiogram_dialog import DialogManager
+import aiohttp
+from urllib.parse import urlparse
+from aiohttp_socks import ProxyConnector
 
+from telethon import TelegramClient
 from bot.database.queries import get_formatted_chats_list, db_get_chat, db_change_chat
-from bot.database.run_db import async_session
-from bot.database.models import Chat
-from sqlalchemy import select
-
 from bot.dialogs.states_groups import MainDialog
+from bot.telethon.telethon_manager import check_proxy_validity
+
+
+# Вывод списка ботоа
+async def userbots_main_getter(**kwargs):
+    # Путь к папке с сессиями
+    sessions_dir = Path("bot/pyrogram/sessions")
+    sessions_dir.mkdir(parents=True, exist_ok=True)  # Создаём папку если её нет
+
+    # Получаем и сортируем список .session файлов
+    session_files = sorted(
+        file.name for file in sessions_dir.glob("*.session") if file.is_file()
+    )
+
+    # Форматируем список с нумерацией и HTML-разметкой
+    formatted_sessions = "\n".join(
+        f"{i + 1}) <code>{name}</code> - готов ✅"
+        for i, name in enumerate(session_files)
+    )
+
+    return {'session_list': formatted_sessions}
+
 
 
 # Вывод краткой актуальной информации о чатах из БД
@@ -40,3 +71,129 @@ async def chat_info_getter(dialog_manager: DialogManager, **kwargs):
     else:
         await dialog_manager.event.answer(f'f"Ошибка при получении чата @{username}')
         await dialog_manager.switch_to(MainDialog.main_menu)
+
+
+# Конвертация telethon сессии в pyrogram сессию
+async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
+    # Получаем пути и данные
+    telethon_session_path = dialog_manager.dialog_data.get('add_bot_session_path')
+    telethon_json_path = dialog_manager.dialog_data.get('add_bot_json_path')
+    proxy_dict = dialog_manager.dialog_data.get('add_bot_proxy_dict')
+
+    # Проверяем прокси
+    proxy_check = await check_proxy_validity(proxy_dict)
+    if not proxy_check["result"]:
+        return proxy_check
+
+    # Загружаем JSON данные
+    try:
+        with open(telethon_json_path, 'r') as f:
+            json_data = json.load(f)
+    except Exception as e:
+        return {"result": False, "result_text": f"❌ Ошибка загрузки JSON: {str(e)}"}
+
+    # Проверяем сессию Telethon
+    try:
+        telethon_client = TelegramClient(
+            telethon_session_path,
+            api_id=int(json_data['app_id']),
+            api_hash=json_data['app_hash'],
+            # proxy={
+            #     'proxy_type': proxy_dict["scheme"],
+            #     'addr': proxy_dict['host'],
+            #     'port': int(proxy_dict['port']),
+            #     'username': proxy_dict['login'],
+            #     'password': proxy_dict['password']
+            # }
+        )
+
+        async with telethon_client:
+            if not await telethon_client.is_user_authorized():
+                return {"result": False, "result_text": "❌ Telethon сессия невалидна"}
+
+            # Получаем информацию об аккаунте
+            me = await telethon_client.get_me()
+            account_info = {
+                "phone": json_data['phone'],
+                "first_name": me.first_name,
+                "username": me.username
+            }
+    except Exception as e:
+        return {"result": False, "result_text": f"❌ Ошибка проверки Telethon: {str(e)}"}
+
+    # Создаем Pyrogram сессию
+    pyrogram_session_path = Path("bot/pyrogram/sessions") / Path(telethon_session_path).stem
+    userbot = None
+
+    try:
+        # Инициализируем клиент Pyrogram
+        userbot = Client(
+            name=str(pyrogram_session_path),
+            api_id=json_data['app_id'],
+            api_hash=json_data['app_hash'],
+            phone_number=json_data['phone'],
+            # proxy=proxy_dict
+        )
+
+        # Подключаемся и запрашиваем код
+        await userbot.connect()
+        send_code_data = await userbot.send_code(json_data['phone'])
+        phone_code_hash = send_code_data.phone_code_hash
+
+        # Получаем код через Telethon
+        async with telethon_client:
+            msg_from_telegram = await telethon_client.get_messages(777000, limit=1)
+            msg_text = msg_from_telegram[0].message
+            code_in_msg = re.search(r'\d+', msg_text)
+
+            if not code_in_msg:
+                return {"result": False, "result_text": "❌ Не удалось получить код из Telegram"}
+
+            phone_code = code_in_msg.group()
+
+        # Пытаемся войти в аккаунт
+        try:
+            # Обычный вход
+            await userbot.sign_in(
+                phone_number=json_data['phone'],
+                phone_code_hash=phone_code_hash,
+                phone_code=phone_code
+            )
+        except SessionPasswordNeeded:
+            # Если требуется 2FA
+            if 'twoFA' not in json_data:
+                return {"result": False, "result_text": "❌ Требуется 2FA пароль, но он не указан в JSON"}
+
+            try:
+                await userbot.check_password(json_data['twoFA'])
+            except Exception as e:
+                return {"result": False, "result_text": f"❌ Ошибка ввода 2FA пароля: {str(e)}"}
+
+        # Получаем информацию о пользователе
+        pyrogram_me = await userbot.get_me()
+
+        return {
+            "result": True,
+            "result_text": (
+                f"✅ Аккаунт успешно подключен!\n\n"
+                f"📱 Телефон: +{json_data['phone']}\n"
+                f"👤 Имя: {pyrogram_me.first_name or 'Нет'}\n"
+                f"🔗 Username: @{pyrogram_me.username or 'Нет'}\n\n"
+                f"<code>Pyrogram сессия сохранена: {pyrogram_session_path}.session</code>"
+            ),
+            "account_info": account_info
+        }
+
+    except Exception as e:
+        return {"result": False, "result_text": f"❌ Ошибка создания Pyrogram сессии: {str(e)}"}
+    finally:
+        if userbot:
+            try:
+                await userbot.disconnect()
+            except:
+                pass
+
+
+async def add_bot_result_getter(dialog_manager: DialogManager, **kwargs):
+    result = await convert_telethon_to_pyrogram(dialog_manager)
+    return result

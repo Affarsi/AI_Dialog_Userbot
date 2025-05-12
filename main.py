@@ -12,7 +12,7 @@ from aiogram_dialog import setup_dialogs
 from bot.apscheduler.scheduler import schedule_chat_activities
 from bot.database.run_db import create_db
 from bot.handlers.command import command_router
-from bot.dialogs.dialogs import main_dialog
+from bot.dialogs.dialogs import main_dialog, add_userbot_dialog
 from config import Config
 
 storage = MemoryStorage()
@@ -25,6 +25,7 @@ scheduler = AsyncIOScheduler(timezone="Europe/Moscow")  # Инициализац
 def setup_routers(dp: Dispatcher) -> None:
     dp.include_routers(
         main_dialog,
+        add_userbot_dialog,
         command_router,
     )
 

@@ -11,11 +11,11 @@ from config import Config
 
 # Запускает указанное количество юзерботов
 async def start_userbot_question(count: int = 1) -> Union[Client, List[Client], bool]:
-    session_files = [f for f in os.listdir('bot/pyrogram/sessions')
-                     if f.endswith('.session')]
+    session_files = [f for f in os.listdir('bot/pyrogram/temp_files')
+                     if f.endswith('.temp_files')]
 
     if not session_files:
-        print("⚠️ Нет доступных сессий юзерботов в папке sessions/")
+        print("⚠️ Нет доступных сессий юзерботов в папке temp_files/")
         return False
 
     clients = []
@@ -39,7 +39,7 @@ async def start_userbot_question(count: int = 1) -> Union[Client, List[Client], 
                 # Создаем клиент Pyrogram
                 client = Client(
                     name=session_name,
-                    workdir="bot/pyrogram/sessions",
+                    workdir="bot/pyrogram/temp_files",
                     api_id=Config.api_id,
                     api_hash=Config.api_hash,
                 )
