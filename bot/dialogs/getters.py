@@ -1,18 +1,12 @@
 import json
-
 import re
-import json
 from pathlib import Path
+
+from aiogram_dialog import DialogManager
 from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded
 from telethon import TelegramClient
 
-from aiogram_dialog import DialogManager
-import aiohttp
-from urllib.parse import urlparse
-from aiohttp_socks import ProxyConnector
-
-from telethon import TelegramClient
 from bot.database.queries import get_formatted_chats_list, db_get_chat, db_change_chat
 from bot.dialogs.states_groups import MainDialog
 from bot.telethon.telethon_manager import check_proxy_validity

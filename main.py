@@ -13,6 +13,7 @@ from bot.apscheduler.scheduler import schedule_chat_activities
 from bot.database.run_db import create_db
 from bot.handlers.command import command_router
 from bot.dialogs.dialogs import main_dialog, add_userbot_dialog
+from bot.handlers.test import test_router
 from config import Config
 
 storage = MemoryStorage()
@@ -24,6 +25,7 @@ scheduler = AsyncIOScheduler(timezone="Europe/Moscow")  # Инициализац
 # Подключает все роутеры к диспетчеру.
 def setup_routers(dp: Dispatcher) -> None:
     dp.include_routers(
+        test_router,
         main_dialog,
         add_userbot_dialog,
         command_router,

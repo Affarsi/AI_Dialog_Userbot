@@ -11,11 +11,11 @@ from config import Config
 
 # Запускает указанное количество юзерботов
 async def start_userbot_question(count: int = 1) -> Union[Client, List[Client], bool]:
-    session_files = [f for f in os.listdir('bot/pyrogram/temp_files')
-                     if f.endswith('.temp_files')]
+    session_files = [f for f in os.listdir('bot/pyrogram/sessions')
+                     if f.endswith('.session')]
 
     if not session_files:
-        print("⚠️ Нет доступных сессий юзерботов в папке temp_files/")
+        print("⚠️ Нет доступных сессий юзерботов в папке sessions/")
         return False
 
     clients = []
@@ -39,7 +39,7 @@ async def start_userbot_question(count: int = 1) -> Union[Client, List[Client], 
                 # Создаем клиент Pyrogram
                 client = Client(
                     name=session_name,
-                    workdir="bot/pyrogram/temp_files",
+                    workdir="bot/pyrogram/sessions",
                     api_id=Config.api_id,
                     api_hash=Config.api_hash,
                 )
@@ -159,9 +159,11 @@ async def userbot_dialog(chat_username: str):
         print(f"❌ Ошибка в диалоге: {str(e)}")
         return False
     finally:
-        for client in clients:
-            await client.stop()
-
+        try:
+            for client in clients:
+                await client.stop()
+        except:
+            pass
 
 # Отправляет действие печатания в течение указанного времени
 async def send_continuous_chat_action(client, chat_id, duration):

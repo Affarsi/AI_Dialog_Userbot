@@ -55,22 +55,40 @@ async def check_telethon_session(session_path: str) -> tuple:
         )
 
         await client.connect()
-        if not await client.is_user_authorized():
+
+        # Проверка на запрос номера телефона/токена
+        if not client.is_connected() or not await client.is_user_authorized():
             return False, "Аккаунт не существует или сессия невалидна"
 
         me = await client.get_me()
+        if not me:
+            return False, "Не удалось получить информацию об аккаунте"
+
         return True, {
             "id": me.id,
             "first_name": me.first_name,
             "username": me.username
         }
+
+    except (AuthKeyError, AuthKeyDuplicatedError):
+        return False, "Невалидная сессия (ошибка авторизации)"
+
+    except ConnectionError:
+        return False, "Ошибка соединения с сервером Telegram"
+
     except Exception as e:
         error_msg = str(e).lower()
-        if "disconnect" in error_msg or "cannot send requests" in error_msg:
-            return False, "Ошибка соединения с сервером Telegram"
+
+        # Обработка случаев, когда просит ввести номер/токен
+        if "phone number" in error_msg or "bot token" in error_msg:
+            return False, "Невалидная сессия (требуется повторная авторизация)"
+
+        # Другие специфические ошибки
         elif any(word in error_msg for word in ['auth', 'authorization', 'session']):
             return False, "Аккаунт не существует или сессия невалидна"
+
         return False, f"Неизвестная ошибка: {str(e)}"
+
     finally:
         if client and client.is_connected():
             await client.disconnect()
