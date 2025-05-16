@@ -69,12 +69,15 @@ async def chat_info_getter(dialog_manager: DialogManager, **kwargs):
 
 # Конвертация telethon сессии в pyrogram сессию
 async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
+    print("[1/5] Начало конвертации Telethon → Pyrogram")
+
     # Получаем пути и данные
     telethon_session_path = dialog_manager.dialog_data.get('add_bot_session_path')
     telethon_json_path = dialog_manager.dialog_data.get('add_bot_json_path')
     proxy_dict = dialog_manager.dialog_data.get('add_bot_proxy_dict')
 
     # Проверяем прокси
+    print("[2/5] Проверка валидности прокси...")
     proxy_check = await check_proxy_validity(proxy_dict)
     if not proxy_check["result"]:
         return proxy_check
@@ -83,35 +86,30 @@ async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
     try:
         with open(telethon_json_path, 'r') as f:
             json_data = json.load(f)
+        print(f"[3/5] JSON успешно загружен (app_id: {json_data['app_id']}, phone: {json_data['phone']})")
     except Exception as e:
         return {"result": False, "result_text": f"❌ Ошибка загрузки JSON: {str(e)}"}
 
     # Проверяем сессию Telethon
+    print("[4/5] Проверка Telethon сессии...")
     try:
         telethon_client = TelegramClient(
             telethon_session_path,
             api_id=int(json_data['app_id']),
             api_hash=json_data['app_hash'],
-            # proxy={
-            #     'proxy_type': proxy_dict["scheme"],
-            #     'addr': proxy_dict['host'],
-            #     'port': int(proxy_dict['port']),
-            #     'username': proxy_dict['login'],
-            #     'password': proxy_dict['password']
-            # }
         )
 
         async with telethon_client:
             if not await telethon_client.is_user_authorized():
                 return {"result": False, "result_text": "❌ Telethon сессия невалидна"}
 
-            # Получаем информацию об аккаунте
             me = await telethon_client.get_me()
             account_info = {
                 "phone": json_data['phone'],
                 "first_name": me.first_name,
                 "username": me.username
             }
+            print(f"Telethon сессия валидна (user: {me.first_name or 'None'} @{me.username or 'None'})")
     except Exception as e:
         return {"result": False, "result_text": f"❌ Ошибка проверки Telethon: {str(e)}"}
 
@@ -120,21 +118,18 @@ async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
     userbot = None
 
     try:
-        # Инициализируем клиент Pyrogram
+        print("[5/5] Создание Pyrogram сессии...")
         userbot = Client(
             name=str(pyrogram_session_path),
             api_id=json_data['app_id'],
             api_hash=json_data['app_hash'],
             phone_number=json_data['phone'],
-            # proxy=proxy_dict
         )
 
-        # Подключаемся и запрашиваем код
         await userbot.connect()
         send_code_data = await userbot.send_code(json_data['phone'])
         phone_code_hash = send_code_data.phone_code_hash
 
-        # Получаем код через Telethon
         async with telethon_client:
             msg_from_telegram = await telethon_client.get_messages(777000, limit=1)
             msg_text = msg_from_telegram[0].message
@@ -144,6 +139,7 @@ async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
                 return {"result": False, "result_text": "❌ Не удалось получить код из Telegram"}
 
             phone_code = code_in_msg.group()
+            print(f"Получен код подтверждения: {phone_code}")
 
         # Пытаемся войти в аккаунт
         try:

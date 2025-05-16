@@ -1,21 +1,13 @@
-import time
+from pyrogram import Client
 
-from telethon import TelegramClient
+from config import Config
 
-# Remember to use your own values from my.telegram.org!
-api_id = 2040
-api_hash = 'b18441a1ff607e10a989891a5462e627'
-proxy = ('socks5', "190.2.137.56", 9999, "rq7re0vcg1-res-country-GB-hold-query", "QLdSi1IVMFupLYiv")
-client = TelegramClient('38641372174', api_id, api_hash, proxy=proxy)
+client = Client(
+    name='79003564078',
+    workdir="bot/pyrogram/sessions",
+    api_id=Config.api_id,
+    api_hash=Config.api_hash,
+)
 
-async def main():
-    me = await client.get_me()
-
-    print(me.stringify())
-
-    username = me.username
-    print(username)
-    print(me.phone)
-
-with client:
-    client.loop.run_until_complete(main())
+client.start()
+print(client.get_me())

@@ -132,15 +132,36 @@ async def userbot_dialog(chat_username: str):
 
         # Разделяем фразы
         phrases = [phrase.strip() for phrase in dialog_text.split(';') if phrase.strip()]
+        if len(phrases) < 2:
+            print("Сгенерировано недостаточно фраз для диалога")
+            return False
 
         # Входим в чат
         for client in clients:
             await client.join_chat(chat_username)
 
-        # Отправляем фразы поочередно
-        for i, phrase in enumerate(phrases):
+        # Отправляем первое сообщение
+        first_phrase = phrases[0]
+        print(f"💬 Юзербот {first_client.name} готовится отправить: {first_phrase}")
+
+        typing_time = min(max(len(first_phrase) / 10, 8), 18)
+        await first_client.send_chat_action(chat_username, enums.ChatAction.TYPING)
+        chat_action_task = asyncio.create_task(
+            send_continuous_chat_action(first_client, chat_username, typing_time)
+        )
+        await asyncio.sleep(typing_time)
+        chat_action_task.cancel()
+
+        # Отправляем первое сообщение и сохраняем его ID
+        first_message = await first_client.send_message(chat_username, first_phrase)
+        print(f"✅ Первое сообщение отправлено: {first_phrase[:20]}...")
+        await asyncio.sleep(2)
+
+        # Отправляем остальные сообщения как ответы на предыдущие
+        last_message = first_message
+        for i, phrase in enumerate(phrases[1:], 1):
             current_client = first_client if i % 2 == 0 else second_client
-            print(f"💬 Юзербот {current_client.name} готовится отправить: {phrase}")
+            print(f"💬 Юзербот {current_client.name} готовится ответить: {phrase}")
 
             typing_time = min(max(len(phrase) / 10, 8), 18)
             await current_client.send_chat_action(chat_username, enums.ChatAction.TYPING)
@@ -149,8 +170,14 @@ async def userbot_dialog(chat_username: str):
             )
             await asyncio.sleep(typing_time)
             chat_action_task.cancel()
-            await current_client.send_message(chat_username, phrase)
-            print(f"✅ Сообщение отправлено: {phrase[:20]}...")
+
+            # Отправляем сообщение как ответ на предыдущее
+            last_message = await current_client.send_message(
+                chat_username,
+                phrase,
+                reply_to_message_id=last_message.id
+            )
+            print(f"✅ Ответ отправлен: {phrase[:20]}...")
             await asyncio.sleep(2 + i % 3)
 
         return True
