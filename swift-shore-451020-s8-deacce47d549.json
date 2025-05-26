@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "swift-shore-451020-s8",
+  "private_key_id": "deacce47d549767fc77785ba4803f08dff508920",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCOEy2A9qGg+xWs\nInv781OH9KUflQyd2GvUD2bXltJ2E6U/1kQE8qZzFAsTsJ9MziGlXYjy0YKJ6h+W\nl9NFhYPbk9HDBErZBtPhlN+cYG2dMg4AUMrs+HYJlCPfRojvr8IoiW9ktEuI+XIy\nahJfkjc7SIepfQcscuEwyBqfOrAHS2MH8rHov19v9hIh0JLARsynAESG6vh3gBOw\nox9le1gxXz3Q8w9oP0aHcTmSvtYCu8XNyDvQ498ygMBjjBauKbA9caDdy/Y2M0oB\nXmLOjAoBv62OhN3i2xkzsXftdQaa8ssDlEmNp5YWasZHr9eSNN2UUChGiUmhya8m\n8KulG/CLAgMBAAECggEAI3dWHKN0paMIPfg9yx9q8r13mvKyO5UTFdTib18PGrq8\nvbrXMAUC2CdgvIGSwrGSZJ182mDCnXr8d7Ne4jP6Po4gBvbDWHoD2oQ3beoEcwFT\nzXBdt9ouXSXF7q7E8FCHv2bPj+wSDxd2Em+4NnNhpkLs2rqDV+01md/aBXW5C5i+\n34oEDXA/IUSF4EKIMxwz9jsGy5HoTekIAucZmsEcMfZPcLLbTvp2zS8wws5+fVc6\n6GFqgdvsIRMM1Jd3XFRuKd5HACx9Oz8haLvhVzWFGURNxRdEKH5jbjmkuJOrfW8H\nGV9vsY33Qzf2UUdW4lly9H9IUU56QIx+7lZ6KW0MgQKBgQDAc19MJcVE4I3ssQpk\nJp4piExUytEvHovqe8cLcCggjviKcMNgaHTq/TNMrZAgq13wb2fkl18r5FYZDwEv\nwwcQVbYf6kzF/1YhTiZ0M0vEqwaCfa5bcoG2aJZwUGDaXdar3soW6y7Bavj/deFj\nGc0R8mn0fSHLg3G7brIiFwDkkwKBgQC8/Vcgy0wHAgSDgOqaa4W5vXODeR3bYHGg\nkeKEWA1hpd36ftH71UNRx/0czyluLVcx4qCjySDV5ydOdKXBLcx1nq5YionemVCh\nYQPy0HjJTQ/vdOfj9eFGDd/Fm3H/J8oOPNkT8wBkPItKPiBykO+pXUODhPKkEHfB\nuimfts13KQKBgQCWrz8krkZBYdl+RDiwphQczN2HXq5fSHmhBX2aFR02MPul2hkA\nOYmiHNK37QX2rncFNRWRxHv+L/DB+h+huACl55aMcrXeKcjUlw5A2ZEv0gFs1t9Y\nNtYdbtKr6iOLlwHo3K47N7YKN6nyy+fH4oHQ1Y/koL1/TdIVQd00F/LZBQKBgBv1\n304axcTDp6dNC2iNP9ubC9wHr0Mloan/62NpI5Gu2IiW+roncy5GSExa2eZTDvNy\ndBHHT/RVnpsc5ukNvZIpR+IRnRQx2pwFnm/uJ/CgVhs3UJeJaSrUIqc5uEPnvx0c\nI4GwEf7Cdlkll+dbShnkkniC0uMzDIS85iubAAsBAoGAAzqMHJ1enRGWo8BB0y1p\navn1EXPqQcwj8tKJ416gwssH7TKtXkDFcoNgGIXrNwhD/Z23nNCfTOXXjkoBdZ8C\nfrzGQ1HtSTeG+q964RHDdPOR0GZ646FhTDKc5480ALBJrasrBIb1CLm6ctiDf0gI\nptpndt45jQ8+qAPOPlTlZHM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "test-622@swift-shore-451020-s8.iam.gserviceaccount.com",
+  "client_id": "105647690368249148002",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test-622%40swift-shore-451020-s8.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
