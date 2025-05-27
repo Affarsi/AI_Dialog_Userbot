@@ -1,5 +1,5 @@
-import json
 import re
+import json
 from pathlib import Path
 
 from aiogram_dialog import DialogManager
@@ -30,7 +30,6 @@ async def userbots_main_getter(**kwargs):
     )
 
     return {'session_list': formatted_sessions}
-
 
 
 # Вывод краткой актуальной информации о чатах из БД
@@ -186,4 +185,43 @@ async def convert_telethon_to_pyrogram(dialog_manager: DialogManager) -> dict:
 
 async def add_bot_result_getter(dialog_manager: DialogManager, **kwargs):
     result = await convert_telethon_to_pyrogram(dialog_manager)
+    return result
+
+
+# Возвращает актуальный список промтов
+async def change_promt_getter(dialog_manager: DialogManager, **kwargs) -> dict:
+    # Initialize default values in case of errors
+    result = {
+        "dialog_promt": "Error: Could not load dialog prompt",
+        "question_promt": "Error: Could not load question prompt"
+    }
+
+    # Load prompts from JSON
+    try:
+        with open("bot/prompts.json", "r", encoding="utf-8") as file:
+            prompts = json.load(file)
+    except FileNotFoundError:
+        return result  # Return default error dictionary
+    except json.JSONDecodeError:
+        result["dialog_promt"] = "Error: Invalid JSON format in prompts.json"
+        result["question_promt"] = "Error: Invalid JSON format in prompts.json"
+        return result
+
+    # Find prompts for question and dialog modes
+    question_prompt = next((p["prompt"] for p in prompts if p["mode"] == "question"), None)
+    dialog_prompt = next((p["prompt"] for p in prompts if p["mode"] == "dialog"), None)
+
+    # Check if prompts were found
+    if question_prompt is None:
+        result["question_promt"] = "Error: Question prompt not found in JSON"
+    else:
+        # Escape curly braces for display in aiogram_dialog
+        result["question_promt"] = question_prompt.replace("{", "[").replace("}", "]")
+
+    if dialog_prompt is None:
+        result["dialog_promt"] = "Error: Dialog prompt not found in JSON"
+    else:
+        # Escape curly braces for display in aiogram_dialog
+        result["dialog_promt"] = dialog_prompt.replace("{", "[").replace("}", "]")
+
     return result

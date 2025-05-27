@@ -11,9 +11,16 @@ class MainDialog(StatesGroup):
     work_mode_chance = State()
 
     userbots_main = State()
+    change_promt = State()
+    new_promt_dialog = State()
+    new_promt_question = State()
 
 class AddUserbot(StatesGroup):
     get_session = State()
     get_json = State()
     get_proxy = State()
     result = State()
+    
+class ChangeUserbot(StatesGroup):
+    change_photo = State()
+    change_fullname = State()

@@ -2,7 +2,7 @@ from aiogram.enums import ContentType
 from aiogram_dialog import Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Back, Row, Group, SwitchTo, Start, Cancel, Button
-from aiogram_dialog.widgets.kbd.state import Update
+# from aiogram_dialog.widgets.kbd.state import Update
 from aiogram_dialog.widgets.text import Const, Format
 
 from bot.dialogs.getters import *
@@ -16,7 +16,7 @@ main_window = Window(
     ),
 
     Group(
-        Update(),
+        # Update(),
         Row(
             SwitchTo(Const('➕ Добавить чат'), id='add_chat', state=MainDialog.add_chat),
             SwitchTo(Const('➖ Удалить чат'), id='dell_chat', state=MainDialog.delete_chat)
@@ -37,10 +37,46 @@ userbots_main_window = Window(
     Format('Список ботов:\n{session_list}'),
     Group(
         Start(Const('Добавить бота'), id='add_bot', state=AddUserbot.get_session),
+        # Row(
+        #     Start(Const('Изменить ник'), id='change_fullname', state=AddUserbot.),
+        #     Start(Const('Изменить аватарку'), id='change_photo_profile', state=AddUserbot.),
+        # ),
+        SwitchTo(Const('Изменить промты'), id='change_promt', state=MainDialog.change_promt),
         SwitchTo(Const('Назад'), id='to_main_menu', state=MainDialog.main_menu),
     ),
     getter=userbots_main_getter,
     state=MainDialog.userbots_main
+)
+
+change_promt_window = Window(
+    Format(
+        '<b>Актуальные промты:</b>\n\n'
+        '[telegram_chat_title] - название телеграмм канала, с которого происходит запрос,\n'
+        '[messages_count] - скрипт составляет случайный диалог из 2-5 сообщений\n\n'
+        '<b>Промт для диалога:</b>\n'
+        '<code>{dialog_promt}</code>\n\n'
+        '<b>Промт для вопросов:</b>\n'
+        '<code>{question_promt}</code>'
+    ),
+    SwitchTo(Const('Изменить диалог'), id='change_dialog_promt', state=MainDialog.new_promt_dialog),
+    SwitchTo(Const('Изменить вопрос'), id='change_question_promt', state=MainDialog.new_promt_question),
+    SwitchTo(Const('Назад'), id='to_main_userbots_main', state=MainDialog.userbots_main),
+    getter=change_promt_getter,
+    state=MainDialog.change_promt
+)
+
+new_promt_dialog_window = Window(
+    Const('Отправьте новый промт!\n\nНе забудьте использовать [telegram_chat_title] и [messages_count]'),
+    MessageInput(get_new_dialog_promt_input, content_types=[ContentType.TEXT]),
+    SwitchTo(Const('Назад'), id='to_change_promt', state=MainDialog.change_promt),
+    state=MainDialog.new_promt_dialog
+)
+
+new_promt_question_window = Window(
+    Const('Отправьте новый промт!\n\nНе забудьте использовать [telegram_chat_title]'),
+    MessageInput(get_new_question_promt_input, content_types=[ContentType.TEXT]),
+    SwitchTo(Const('Назад'), id='to_change_promt', state=MainDialog.change_promt),
+    state=MainDialog.new_promt_question
 )
 
 get_session_window = Window(

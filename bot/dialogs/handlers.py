@@ -1,3 +1,6 @@
+import os
+import json
+
 from pathlib import Path
 
 from aiogram_dialog import DialogManager
@@ -334,3 +337,122 @@ async def get_proxy_input(
     await message.answer("Прокси успешно сохранен\n\n"
                          "<b>Начинаю конвертацию telethon сессии в pyrogram!\nЭто может занять до 1 минуты, ожидайте!</b>")
     await dialog_manager.switch_to(AddUserbot.result)
+    
+
+# Обновляем промт для диалогов
+async def get_new_dialog_promt_input(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    dialog_promt = message.text.strip()
+
+    # Проверка наличия нужных плейсхолдеров
+    required_placeholders = ["[telegram_chat_title]", "[messages_count]"]
+    missing_placeholders = [ph for ph in required_placeholders if ph not in dialog_promt]
+
+    if missing_placeholders:
+        await message.answer(
+            f"Ошибка: в промпте отсутствуют следующие плейсхолдеры: {', '.join(missing_placeholders)}. "
+            "Пожалуйста, укажите [telegram_chat_title] и [messages_count]."
+        )
+        return
+
+    # Замена [ ] на { }
+    formatted_prompt = dialog_promt.replace("[telegram_chat_title]", "{telegram_chat_title}").replace("[messages_count]", "{messages_count}")
+
+    # Обновление prompts.json
+    prompts_file = os.path.join("bot", "prompts.json")
+    try:
+        # Чтение текущего файла
+        if not os.path.exists(prompts_file):
+            await message.answer("Ошибка: файл bot/prompts.json не найден.")
+            return
+
+        with open(prompts_file, "r", encoding="utf-8") as file:
+            prompts = json.load(file)
+
+        # Поиск и обновление промпта для dialog
+        for prompt in prompts:
+            if prompt["mode"] == "dialog":
+                prompt["prompt"] = formatted_prompt
+                prompt["placeholders"] = ["telegram_chat_title", "messages_count"]
+                break
+        else:
+            # Если промпт для dialog не найден, добавляем новый
+            prompts.append({
+                "mode": "dialog",
+                "prompt": formatted_prompt,
+                "placeholders": ["telegram_chat_title", "messages_count"]
+            })
+
+        # Сохранение обновлённого файла
+        with open(prompts_file, "w", encoding="utf-8") as file:
+            json.dump(prompts, file, ensure_ascii=False, indent=2)
+
+        await message.answer("Промт для диалогов успешно обновлён!")
+
+    except json.JSONDecodeError:
+        await message.answer("Ошибка: некорректный формат файла bot/prompts.json.")
+    except Exception as e:
+        await message.answer(f"Ошибка при обновлении промпта: {str(e)}")
+    finally:
+        await dialog_manager.switch_to(state=MainDialog.change_promt)
+
+
+# Обновляем промт для вопросов
+async def get_new_question_promt_input(
+        message: Message,
+        message_input: MessageInput,
+        dialog_manager: DialogManager,
+):
+    question_promt = message.text.strip()
+
+    # Проверка наличия нужного плейсхолдера
+    if "[telegram_chat_title]" not in question_promt:
+        await message.answer(
+            "Ошибка: в промпте отсутствует [telegram_chat_title]. "
+            "Пожалуйста, укажите [telegram_chat_title]."
+        )
+        return
+
+    # Замена [ ] на { }
+    formatted_prompt = question_promt.replace("[telegram_chat_title]", "{telegram_chat_title}")
+
+    # Обновление prompts.json
+    prompts_file = os.path.join("bot", "prompts.json")
+    try:
+        # Чтение текущего файла
+        if not os.path.exists(prompts_file):
+            await message.answer("Ошибка: файл bot/prompts.json не найден.")
+            return
+
+        with open(prompts_file, "r", encoding="utf-8") as file:
+            prompts = json.load(file)
+
+        # Поиск и обновление промпта для question
+        for prompt in prompts:
+            if prompt["mode"] == "question":
+                prompt["prompt"] = formatted_prompt
+                prompt["placeholders"] = ["telegram_chat_title"]
+                break
+        else:
+            # Если промпт для question не найден, добавляем новый
+            prompts.append({
+                "mode": "question",
+                "prompt": formatted_prompt,
+                "placeholders": ["telegram_chat_title"]
+            })
+
+        # Сохранение обновлённого файла
+        with open(prompts_file, "w", encoding="utf-8") as file:
+            json.dump(prompts, file, ensure_ascii=False, indent=2)
+
+        await message.answer("Промт для вопросов успешно обновлён!")
+
+    except json.JSONDecodeError:
+        await message.answer("Ошибка: некорректный формат файла bot/prompts.json.")
+    except Exception as e:
+        await message.answer(f"Ошибка при обновлении промпта: {str(e)}")
+    finally:
+        await dialog_manager.switch_to(state=MainDialog.change_promt)
