@@ -1,4 +1,5 @@
 import re
+import os
 import json
 from pathlib import Path
 
@@ -225,3 +226,52 @@ async def change_promt_getter(dialog_manager: DialogManager, **kwargs) -> dict:
         result["dialog_promt"] = dialog_prompt.replace("{", "[").replace("}", "]")
 
     return result
+
+
+# Геттер список всех ботов, которые есть
+async def bots_getter(dialog_manager: DialogManager, **kwargs) -> dict:
+    session_dir = os.path.join("bot", "pyrogram", "sessions")
+    try:
+        # Считываем все файлы с расширением .session
+        bots = [
+            {"id": f, "name": f}
+            for f in os.listdir(session_dir)
+            if f.endswith(".session") and os.path.isfile(os.path.join(session_dir, f))
+        ]
+        return {"bots": bots}
+    except FileNotFoundError:
+        return {"bots": []}  # Возвращаем пустой список, если папка не найдена
+    except Exception as e:
+        print(f"Error reading session files: {str(e)}")
+        return {"bots": []}
+    
+
+# Получает информацию о том userbotе, которого выбрал пользоавтель
+async def userbot_info_getter(dialog_manager: DialogManager, **kwargs) -> dict:
+    bot_data = dialog_manager.dialog_data
+    error = bot_data.get("error")
+    if error is not None:
+        return {"bot_data": f"Ошибка: {error}", "photo_id": None}
+
+    info_lines = []
+    if bot_data.get("id"):
+        info_lines.append(f"<b>ID:</b> {bot_data['id']}")
+    if bot_data.get("first_name"):
+        info_lines.append(f"<b>Имя:</b> {bot_data['first_name']}")
+    if bot_data.get("last_name"):
+        info_lines.append(f"<b>Фамилия:</b> {bot_data['last_name']}")
+    if bot_data.get("username"):
+        info_lines.append(f"<b>Юзернейм:</b> {bot_data['username']}")
+    if bot_data.get("phone_number"):
+        info_lines.append(f"<b>Номер телефона:</b> {bot_data['phone_number']}")
+    if bot_data.get("is_bot") is not None:
+        info_lines.append(f"<b>Бот:</b> {'Да' if bot_data['is_bot'] else 'Нет'}")
+    if bot_data.get("status"):
+        info_lines.append(f"<b>Статус:</b> {bot_data['status']}")
+    if bot_data.get("last_online_date"):
+        info_lines.append(f"<b>Последний раз онлайн:</b> {bot_data['last_online_date']}")
+    if bot_data.get("session_file"):
+        info_lines.append(f"<b>Файл сессии:</b> {bot_data['session_file']}")
+
+    formatted_info = "\n".join(info_lines)
+    return {"bot_data": formatted_info}

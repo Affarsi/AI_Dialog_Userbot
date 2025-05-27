@@ -1,11 +1,14 @@
 import os
 import json
+import tempfile
 
 from pathlib import Path
+from config import Config
+from pyrogram import Client
 
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import Button
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram_dialog.widgets.input import MessageInput
 
 from bot.database.queries import db_change_all_chats_status, db_delete_chat, db_add_chat, db_change_chat
@@ -456,3 +459,149 @@ async def get_new_question_promt_input(
         await message.answer(f"Ошибка при обновлении промпта: {str(e)}")
     finally:
         await dialog_manager.switch_to(state=MainDialog.change_promt)
+        
+        
+# Callback для обработки выбора бота
+async def on_bot_selected(callback, select, dialog_manager: DialogManager, selected_item: str):
+    await callback.answer('Запускаю бота...')
+    session_file = os.path.join("bot", "pyrogram", "sessions", selected_item)
+    session_name = selected_item.replace(".session", "")
+
+    # Конфигурация Pyrogram
+    api_id = Config.api_id
+    api_hash = Config.api_hash
+
+    try:
+        # Инициализация Pyrogram-клиента
+        async with Client(
+            name=session_name,
+            api_id=api_id,
+            api_hash=api_hash,
+            session_string=None,  # Используем .session файл
+            workdir=os.path.join("bot", "pyrogram", "sessions")
+        ) as client:
+            # Получение информации о боте
+            me = await client.get_me()
+
+            # Подготовка данных для сохранения
+            bot_data = {
+                "id": me.id,
+                "first_name": me.first_name,
+                "last_name": me.last_name,
+                "username": me.username,
+                "phone_number": me.phone_number,
+                "is_bot": me.is_bot,
+                "status": me.status,
+                "last_online_date": str(me.last_online_date) if me.last_online_date else None,
+                "session_file": selected_item,
+                "userbot_session_name": session_name  # Сохраняем session_name
+            }
+
+            # Сохранение данных в dialog_data
+            dialog_manager.dialog_data.update(bot_data)
+
+    except Exception as e:
+        print(f"Failed to start bot {selected_item}: {str(e)}")
+        dialog_manager.dialog_data.update({"error": f"Failed to start bot {str(e)}"})
+    finally:
+        await dialog_manager.switch_to(state=MainDialog.userbot_info)
+        
+        
+# Обновляем Имя Фамилию userbot`а
+async def new_fullname_input(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    # Получаем введённое имя
+    new_name = message.text.strip()
+
+    # Разделяем на имя и фамилию
+    parts = new_name.split(maxsplit=1)
+    first_name = parts[0] if parts else ""
+    last_name = parts[1] if len(parts) > 1 else ""
+
+    # Проверка, что имя не пустое
+    if not first_name:
+        await message.answer("Ошибка: Имя не может быть пустым.")
+        return
+
+    # Получаем session_name из dialog_data
+    session_name = dialog_manager.dialog_data.get("userbot_session_name")
+    if not session_name:
+        await message.answer("Ошибка: Не выбран бот для изменения.")
+        await dialog_manager.switch_to(state=MainDialog.userbot_info)
+        return
+
+    # Конфигурация Pyrogram
+    api_id = Config.api_id
+    api_hash = Config.api_hash
+
+    try:
+        # Инициализация Pyrogram-клиента
+        async with Client(
+            name=session_name,
+            api_id=api_id,
+            api_hash=api_hash,
+            session_string=None,
+            workdir=os.path.join("bot", "pyrogram", "sessions")
+        ) as client:
+            # Обновляем профиль
+            await client.update_profile(first_name=first_name, last_name=last_name)
+
+            # Обновляем данные в dialog_data
+            dialog_manager.dialog_data["first_name"] = first_name
+            dialog_manager.dialog_data["last_name"] = last_name
+            dialog_manager.dialog_data["error"] = None  # Сбрасываем ошибку, если была
+
+            # Подтверждение пользователю
+            await message.answer(f"Имя успешно обновлено: {first_name} {last_name}".strip())
+
+    except Exception as e:
+        await message.answer(f"Ошибка при обновлении имени: {str(e)}")
+        dialog_manager.dialog_data["error"] = f"Failed to update profile: {str(e)}"
+
+    finally:
+        await dialog_manager.switch_to(state=MainDialog.userbot_info)
+        
+        
+# Новая фотография для userbot`а
+async def new_photo_input(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    # Получаем file_id самой большой версии фотографии
+    photo_file_id = message.photo[-1].file_id
+    
+    # Получаем session_name из dialog_data
+    session_name = dialog_manager.dialog_data.get("userbot_session_name")
+    
+    # Конфигурация Pyrogram
+    api_id = Config.api_id
+    api_hash = Config.api_hash
+    
+    # Создаем папку для фотографий, если ее нет
+    photos_dir = os.path.join("bot", "pyrogram", "photos")
+    os.makedirs(photos_dir, exist_ok=True)
+    
+    try:
+        # Скачиваем фото через бота
+        bot = message.bot
+        file = await bot.get_file(photo_file_id)
+        photo_path = os.path.join(photos_dir, "profile_photo.jpg")
+        
+        # Скачиваем и сохраняем фото
+        await bot.download_file(file.file_path, photo_path)
+        
+        # Инициализация Pyrogram-клиента и установка фото
+        async with Client(
+            name=session_name,
+            api_id=api_id,
+            api_hash=api_hash,
+            session_string=None,
+            workdir=os.path.join("bot", "pyrogram", "sessions")
+        ) as client:
+            await client.set_profile_photo(photo=photo_path)
+            
+            # Подтверждение пользователю
+            await message.answer("Фотография профиля успешно обновлена!")
+            
+    except Exception as e:
+        await message.answer(f"Ошибка при обновлении фотографии: {str(e)}")
+        dialog_manager.dialog_data["error"] = f"Failed to update photo: {str(e)}"
+    
+    finally:
+        await dialog_manager.switch_to(state=MainDialog.userbot_info)

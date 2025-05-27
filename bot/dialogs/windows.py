@@ -1,13 +1,14 @@
 from aiogram.enums import ContentType
 from aiogram_dialog import Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Row, Group, SwitchTo, Start, Cancel, Button
+from aiogram_dialog.widgets.kbd import Back, Row, Group, SwitchTo, Start, Cancel, Button, Select, ScrollingGroup
+from aiogram_dialog.widgets.media import DynamicMedia
 # from aiogram_dialog.widgets.kbd.state import Update
 from aiogram_dialog.widgets.text import Const, Format
 
 from bot.dialogs.getters import *
 from bot.dialogs.handlers import *
-from bot.dialogs.states_groups import MainDialog, AddUserbot
+from bot.dialogs.states_groups import *
 
 main_window = Window(
     Format(
@@ -37,15 +38,54 @@ userbots_main_window = Window(
     Format('Список ботов:\n{session_list}'),
     Group(
         Start(Const('Добавить бота'), id='add_bot', state=AddUserbot.get_session),
-        # Row(
-        #     Start(Const('Изменить ник'), id='change_fullname', state=AddUserbot.),
-        #     Start(Const('Изменить аватарку'), id='change_photo_profile', state=AddUserbot.),
-        # ),
+        SwitchTo(Const('Изменить бота'), id='change_userbot', state=MainDialog.change_userbot),
         SwitchTo(Const('Изменить промты'), id='change_promt', state=MainDialog.change_promt),
         SwitchTo(Const('Назад'), id='to_main_menu', state=MainDialog.main_menu),
     ),
     getter=userbots_main_getter,
     state=MainDialog.userbots_main
+)
+
+change_userbot_window = Window(
+    Const("Выберите бота, которого хотите изменить:"),
+    ScrollingGroup(
+        Select(
+            text=Format("{item[name]}"), 
+            id="bot_select",
+            item_id_getter=lambda x: x["id"], 
+            items="bots", 
+            on_click=on_bot_selected, 
+        ),
+        id="bots_scroll",
+        width=2, 
+        height=8,  
+    ),
+    SwitchTo(Const('Назад'), id='to_main_userbots_main', state=MainDialog.userbots_main),
+    getter=bots_getter,  
+    state=MainDialog.change_userbot
+)
+
+userbot_info_window = Window(
+    Format("{bot_data}"),  
+    SwitchTo(Const('Изменить имя и фамилию'), id='change_fullname', state=MainDialog.change_fullname),
+    SwitchTo(Const('Изменить фотографию профиля'), id='change_photo', state=MainDialog.change_photo),
+    SwitchTo(Const('Назад'), id='to_change_userbot', state=MainDialog.change_userbot),
+    getter=userbot_info_getter,
+    state=MainDialog.userbot_info
+)
+
+change_fullname_window = Window(
+    Const('Введите новую Имя Фамилия через пробел\n\nПример: <i>Иван Иванов</i>'),
+    MessageInput(new_fullname_input, content_types=[ContentType.TEXT]),
+    SwitchTo(Const('Назад'), id='to_userbot_info', state=MainDialog.userbot_info),
+    state=MainDialog.change_fullname
+)
+
+change_photo_window = Window(
+    Const('Отправьте новую аватарку для пользователя'),
+    MessageInput(new_photo_input, content_types=[ContentType.PHOTO]),
+    SwitchTo(Const('Назад'), id='to_userbot_info', state=MainDialog.userbot_info),
+    state=MainDialog.change_photo
 )
 
 change_promt_window = Window(

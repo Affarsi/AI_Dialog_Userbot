@@ -13,6 +13,11 @@ main_dialog = Dialog(
     work_mode_chance_window,
 
     userbots_main_window,
+    change_userbot_window,
+    userbot_info_window,
+    change_fullname_window,
+    change_photo_window,
+    
     change_promt_window,
     new_promt_dialog_window,
     new_promt_question_window,
